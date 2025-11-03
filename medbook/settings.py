@@ -1,6 +1,6 @@
 from pathlib import Path
 import os
-from decouple import config,Csv
+from decouple import config
 import dj_database_url
 from django.utils.translation import gettext_lazy as _
 
@@ -17,8 +17,10 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost', cast=Csv())
-CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
+ALLOWED_HOSTS = ['medbook-9u89.onrender.com','localhost','127.0.0.1']
+CSRF_TRUSTED_ORIGINS = [
+    "https://medbook-9u89.onrender.com/",
+]
 
 # Application definition
 
