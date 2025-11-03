@@ -1,0 +1,108 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: Arial, sans-serif;
+    background-color: white;
+    overflow: hidden;
+}
+
+/* Geometric corner shapes */
+.shape-top-right {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 200px;
+    height: 200px;
+    background: #6CB34D;
+    clip-path: polygon(100% 0, 100% 100%, 0 0);
+}
+
+.shape-bottom-left {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 200px;
+    height: 200px;
+    background: #6488F2;
+    clip-path: polygon(0 100%, 100% 100%, 0 0);
+}
+
+/* Splash logo container */
+.splash {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    text-align: center;
+    opacity: 1;
+    transition: opacity 1s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.splash img {
+    width: 200px;
+    opacity: 0;
+    animation: fadeInLogo 2s ease forwards;
+}
+
+@keyframes fadeInLogo {
+    0% { opacity: 0; transform: translateY(-50px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Login section */
+.login-section {
+    display: none;
+    text-align: center;
+    padding: 50px;
+    max-width: 400px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+}
+
+.login-section form {
+    display: flex;
+    flex-direction: column;
+}
+
+.login-section input[type="email"],
+.login-section input[type="password"] {
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+.login-section button {
+    background-color: #6CB34D;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.login-section button:hover {
+    background-color: #5aa13f;
+}
+
+.login-links {
+    margin-top: 15px;
+}
+
+.login-links a {
+    text-decoration: none;
+    color: #6488F2;
+    margin: 0 10px;
+    font-weight: bold;
+}
+.login-links a:hover {
+    text-decoration: underline;
+}
