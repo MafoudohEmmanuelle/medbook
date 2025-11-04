@@ -139,15 +139,14 @@ def login_view(request):
                 translation.activate(user.preferred_language)
                 request.session[translation.LANGUAGE_SESSION_KEY] = user.preferred_language
 
-            # Redirect by role
             if user.role == User.Role.PATIENT:
                 return redirect('core:patient_dashboard')
             elif user.role == User.Role.DOCTOR:
                 return redirect('core:doctor_dashboard')
-            elif user.role == User.Role.ADMIN or user.is_staff:
-                return redirect('core:admin_dashboard')
             elif user.role == User.Role.MANAGER:
                 return redirect('core:manager_dashboard')
+            elif user.role == User.Role.ADMIN or user.is_staff:
+                return redirect('/admin/')
             else:
                 messages.error(request, _("Invalid user role. Please contact support."))
                 logout(request)
