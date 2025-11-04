@@ -35,6 +35,7 @@ class User(AbstractUser):
         ADMIN = "ADMIN", _("Administrator")
         DOCTOR = "DOCTOR", _("Doctor")
         PATIENT = "PATIENT", _("Patient")
+        MANAGER = "MANAGER", _("Manager") 
 
     username = None  # Disable username field
     email = models.EmailField(_('email address'), unique=True)
@@ -92,3 +93,8 @@ class Administrator(models.Model):
 
     def __str__(self):
         return f"Administrator: {self.user.get_full_name() or self.user.email}"
+
+class Manager(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    def __str__(self):
+        return f"Manager: {self.user.get_full_name() or self.user.email}"
