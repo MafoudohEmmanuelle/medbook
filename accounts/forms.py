@@ -152,3 +152,10 @@ class LoginForm(AuthenticationForm):
         label="Password",
         widget=forms.PasswordInput(attrs={'class': 'form-control'})
     )
+
+class CustomUserCreationForm(forms.ModelForm):
+    """Form to create a user without requiring password in admin."""
+
+    class Meta:
+        model = User
+        fields = ('email', 'first_name', 'last_name','role')

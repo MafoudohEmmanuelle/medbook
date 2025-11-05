@@ -7,18 +7,17 @@ from django.core.signing import Signer
 
 from .models import User, Doctor, Patient, Manager
 from .utils import send_account_email
+from .forms import CustomUserCreationForm
 
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    """Custom admin for the User model with auto password generation."""
-
+    add_form = CustomUserCreationForm  # <- use custom form
     list_display = ('email', 'first_name', 'last_name', 'role', 'is_active')
     list_filter = ('role', 'is_active', 'is_staff')
     search_fields = ('email', 'first_name', 'last_name')
     ordering = ('email',)
 
-    # Hide password fields from the admin “Add User” page
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
@@ -28,9 +27,9 @@ class UserAdmin(BaseUserAdmin):
 
     fieldsets = (
         (None, {'fields': ('email',)}),
-        (_('Personal info'), {'fields': ('first_name', 'last_name', 'phone', 'address', 'profile_image', 'gender', 'date_of_birth')}),
-        (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
-        (_('Role'), {'fields': ('role',)}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'phone', 'address', 'profile_image', 'gender', 'date_of_birth')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Role', {'fields': ('role',)}),
     )
 
     def save_model(self, request, obj, form, change):
