@@ -1,0 +1,77 @@
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #f7faff;
+    color: #333;
+    height: 100vh;
+}
+
+.register-container {
+    min-height: 100vh;
+    padding: 20px;
+    background-color: #f7faff;
+}
+
+.register-card {
+    background-color: white;
+    max-width: 500px;
+    width: 100%;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.register-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.register-card .logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 10px;
+}
+
+/* Form inputs */
+input, select {
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    padding: 8px 12px;
+    width: 100%;
+    transition: border-color 0.3s;
+}
+
+input:focus, select:focus {
+    border-color: #4CAF50;
+    outline: none;
+    box-shadow: 0 0 5px rgba(76,175,80,0.3);
+}
+
+button.btn-primary {
+    background-color: #4CAF50;
+    border-color: #4CAF50;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+button.btn-primary:hover {
+    background-color: #45a049;
+}
+
+/* Error messages */
+.text-danger {
+    font-size: 0.875em;
+    margin-top: 2px;
+}
+
+/* Links */
+a {
+    color: #4CAF50;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}

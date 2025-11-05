@@ -1,10 +1,10 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils.translation import gettext_lazy as _
-from django.utils import translation
 from django.contrib import messages
 
 from accounts.models import User, Doctor, Patient
+from appointments.models import Appointment  # Assuming you have an Appointment model
 
 
 def home(request):
@@ -14,16 +14,15 @@ def home(request):
     """
     return render(request, 'core/home.html')
 
+
 @login_required
 def patient_dashboard(request):
-    # Ensure only patients can access
     if request.user.role != User.Role.PATIENT:
         messages.error(request, _("Access denied: Patients only."))
         return redirect('core:home')
 
     patient = Patient.objects.filter(user=request.user).first()
 
-    # Example: later connect these to Appointment model
     stats = {
         'confirmed': 2,
         'pending': 1,
@@ -38,6 +37,7 @@ def patient_dashboard(request):
     }
     return render(request, 'core/patient_dashboard.html', context)
 
+
 @login_required
 def doctor_dashboard(request):
     if request.user.role != User.Role.DOCTOR:
@@ -46,7 +46,6 @@ def doctor_dashboard(request):
 
     doctor = Doctor.objects.filter(user=request.user).first()
 
-    # Example placeholders for stats
     stats = {
         'appointments_today': 5,
         'pending_approvals': 3,
@@ -62,23 +61,30 @@ def doctor_dashboard(request):
 
 
 @login_required
-def admin_dashboard(request):
-    if not request.user.is_staff and request.user.role != User.Role.ADMIN:
-        messages.error(request, _("Access denied: Administrators only."))
+def manager_dashboard(request):
+    """
+    Dashboard view for Managers.
+    Shows overview stats and a table of doctors.
+    """
+    if request.user.role != User.Role.MANAGER:
+        messages.error(request, _("Access denied: Managers only."))
         return redirect('core:home')
 
     doctors = Doctor.objects.all()
     patients = Patient.objects.all()
+    appointments = Appointment.objects.all()  # Replace with your Appointment queryset if exists
 
     stats = {
         'total_doctors': doctors.count(),
         'total_patients': patients.count(),
+        'active_appointments': appointments.filter(status='active').count(),
+        'completed_appointments': appointments.filter(status='completed').count(),
     }
 
     context = {
         'doctors': doctors,
         'patients': patients,
         'stats': stats,
-        'title': _("Admin Dashboard"),
+        'title': _("Manager Dashboard"),
     }
-    return render(request, 'core/admin_dashboard.html', context)
+    return render(request, 'core/manager_dashboard.html', context)
