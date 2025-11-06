@@ -1,270 +1,192 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, logout, update_session_auth_hash, authenticate
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.utils import timezone
-from datetime import timedelta
-from .models import Planning, TimeSlot, Appointment, DoctorUnavailability
-from accounts.models import Doctor, Patient
-from .forms import GlobalPlanningForm, DoctorUnavailabilityForm, BeneficiaryForm
-from django.utils import timezone
-from calendar import monthrange
+from django.utils.translation import gettext_lazy as _
+from django.utils import translation
+
+from .models import User, Doctor, Patient, Manager
+from .forms import (
+    PatientRegistrationForm,
+    DoctorRegistrationForm,
+    DoctorProfileForm,
+    ManagerCreationForm,
+    ManagerProfileForm,
+    EmailOnlyLoginForm,
+    DefinePasswordForm,
+)
+
+# --- Language switching ---
+def switch_language(request):
+    lang = request.GET.get('lang', 'en')
+    translation.activate(lang)
+    request.session[translation.LANGUAGE_SESSION_KEY] = lang
+    return redirect(request.META.get('HTTP_REFERER', '/'))
 
 
-# === Utility check functions ===
-
-def is_manager(user):
-    return hasattr(user, "manager")
-
-def is_doctor(user):
-    return hasattr(user, "doctor")
-
-def is_patient(user):
-    return hasattr(user, "patient")
-
-
-# === MANAGER: Global planning generation ===
-
-@login_required
-@user_passes_test(is_manager)
-def generate_global_planning(request):
-    """
-    Manager defines the global planning for doctors,
-    marks unavailable periods, and generates valid slots.
-    """
-    doctors = Doctor.objects.all().order_by("user__last_name")
-
-    if request.method == "POST":
-        form = GlobalPlanningForm(request.POST)
-        selected_doctors = request.POST.getlist("doctors")
-
+# --- Patient registration ---
+def register_patient(request):
+    if request.method == 'POST':
+        form = PatientRegistrationForm(request.POST, request.FILES)
         if form.is_valid():
-            month = form.cleaned_data["month"]
-            year = form.cleaned_data["year"]
-            start_hour = form.cleaned_data["start_hour"]
-            end_hour = form.cleaned_data["end_hour"]
-            slot_duration = form.cleaned_data["slot_duration"]
-
-            for doctor_id in selected_doctors:
-                doctor = Doctor.objects.get(id=doctor_id)
-                planning, _ = Planning.objects.get_or_create(
-                    doctor=doctor, month=month, year=year
-                )
-
-                # Remove existing slots
-                planning.slots.all().delete()
-
-                from datetime import datetime, time
-                import calendar
-                num_days = calendar.monthrange(year, month)[1]
-                unavailabilities = DoctorUnavailability.objects.filter(doctor=doctor)
-
-                for day in range(1, num_days + 1):
-                    date_obj = timezone.datetime(year, month, day).date()
-
-                    # Skip unavailable days
-                    if any(ua.start_date <= date_obj <= ua.end_date for ua in unavailabilities):
-                        continue
-
-                    for hour in range(start_hour, end_hour):
-                        start_time = datetime.combine(date_obj, time(hour, 0))
-                        end_time = start_time + timedelta(minutes=slot_duration)
-                        TimeSlot.objects.create(
-                            planning=planning,
-                            date=date_obj,
-                            start_time=start_time.time(),
-                            end_time=end_time.time(),
-                            status="free",
-                        )
-
-            messages.success(request, "Global planning generated successfully.")
-            return redirect("appointments:generate_global_planning")
-        else:
-            messages.error(request, "Please correct the errors in the form.")
+            user = form.save()
+            login(request, user)
+            messages.success(request, _("Account created successfully!"))
+            return redirect('core:patient_dashboard')
     else:
-        form = GlobalPlanningForm()
-
-    unavailability_form = DoctorUnavailabilityForm()
-    context = {
-        "form": form,
-        "doctors": doctors,
-        "unavailability_form": unavailability_form,
-    }
-    return render(request, "appointments/generate_global_planning.html", context)
+        form = PatientRegistrationForm()
+    return render(request, 'accounts/register_patient.html', {'form': form})
 
 
-# === MANAGER/DOCTOR: Add unavailability ===
-
-@login_required
-def add_doctor_unavailability(request):
-    """
-    Allows managers or doctors to define unavailable date ranges.
-    """
-    if request.method == "POST":
-        form = DoctorUnavailabilityForm(request.POST, user=request.user)
+# --- Login view ---
+def login_view(request):
+    if request.method == 'POST':
+        form = EmailOnlyLoginForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Unavailability period saved successfully.")
-        else:
-            messages.error(request, "Please correct the errors in the form.")
-    return redirect("appointments:generate_global_planning")
+            email = form.cleaned_data['email']
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                messages.error(request, _("Email not found."))
+                return redirect('accounts:login')
 
-
-# === PATIENT: View available slots and book ===
-
-@login_required
-@user_passes_test(is_patient)
-def view_doctor_schedule(request, doctor_id):
-    """
-    Display a doctor’s available slots for booking.
-    """
-    doctor = get_object_or_404(Doctor, id=doctor_id)
-    slots = TimeSlot.objects.filter(planning__doctor=doctor, status="free").order_by("date", "start_time")
-    return render(request, "appointments/view_doctor_schedule.html", {"doctor": doctor, "slots": slots})
-
-
-@login_required
-@user_passes_test(is_patient)
-def book_appointment(request, doctor_id, slot_id):
-    """
-    Patient books an appointment with a doctor and a specific time slot.
-    """
-    patient = get_object_or_404(Patient, user=request.user)
-    doctor = get_object_or_404(Doctor, id=doctor_id)
-    slot = get_object_or_404(TimeSlot, id=slot_id, status="free")
-
-    if request.method == "POST":
-        book_for_someone = request.POST.get("for_someone") == "true"
-        beneficiary = None
-
-        if book_for_someone:
-            form = BeneficiaryForm(request.POST)
-            if form.is_valid():
-                beneficiary = form.save(commit=False)
-                beneficiary.patient = patient
-                beneficiary.save()
+            if not user.has_usable_password():
+                # First-time login (doctor/manager)
+                login(request, user)
+                return redirect('accounts:setup_account')
             else:
-                messages.error(request, "Please complete beneficiary information.")
-                return redirect(request.path)
+                # Normal login — require password
+                user_auth = authenticate(request, email=email, password=request.POST.get('password'))
+                if user_auth:
+                    login(request, user_auth)
+                else:
+                    messages.error(request, _("Invalid credentials."))
+                    return redirect('accounts:login')
 
-        Appointment.objects.create(
-            patient=patient,
-            doctor=doctor,
-            time_slot=slot,
-            beneficiary=beneficiary,
-            status="confirmed"
-        )
-        slot.status = "reserved"
-        slot.save()
+            # Redirect by role
+            if user.role == User.Role.PATIENT:
+                return redirect('core:patient_dashboard')
+            elif user.role == User.Role.DOCTOR:
+                return redirect('core:doctor_dashboard')
+            elif user.role == User.Role.MANAGER:
+                return redirect('core:manager_dashboard')
+            elif user.role == User.Role.ADMIN or user.is_staff:
+                return redirect('/admin/')
+            else:
+                messages.error(request, _("Invalid user role."))
+                logout(request)
+                return redirect('accounts:login')
+    else:
+        form = EmailOnlyLoginForm()
+    return render(request, "accounts/login.html", {"form": form})
 
-        messages.success(request, "Appointment booked successfully.")
-        return redirect("appointments:my_appointments")
 
-    form = BeneficiaryForm()
-    return render(request, "appointments/book_appointment.html", {
-        "doctor": doctor,
-        "slot": slot,
-        "form": form
+# --- First-time setup for doctor/manager ---
+@login_required
+def setup_account(request):
+    user = request.user
+    if user.has_usable_password():
+        # Already set up, redirect to their dashboard
+        if user.role == User.Role.DOCTOR:
+            return redirect('core:doctor_dashboard')
+        elif user.role == User.Role.MANAGER:
+            return redirect('core:manager_dashboard')
+        return redirect('core:home')
+
+    # Setup mode (first login)
+    if user.role == User.Role.DOCTOR:
+        profile_instance = get_object_or_404(Doctor, user=user)
+        ProfileForm = DoctorProfileForm
+        dashboard_redirect = 'core:doctor_dashboard'
+    elif user.role == User.Role.MANAGER:
+        profile_instance = get_object_or_404(Manager, user=user)
+        ProfileForm = ManagerProfileForm
+        dashboard_redirect = 'core:manager_dashboard'
+    else:
+        messages.error(request, _("You cannot access setup page."))
+        return redirect('accounts:login')
+
+    if request.method == 'POST':
+        password_form = DefinePasswordForm(user, request.POST)
+        profile_form = ProfileForm(request.POST, request.FILES, instance=profile_instance)
+        if password_form.is_valid() and profile_form.is_valid():
+            password_form.save()
+            update_session_auth_hash(request, user)
+            profile_form.save()
+            messages.success(request, _("Setup completed successfully!"))
+            return redirect(dashboard_redirect)
+    else:
+        password_form = DefinePasswordForm(user)
+        profile_form = ProfileForm(instance=profile_instance)
+
+    return render(request, 'accounts/setup_account.html', {
+        'password_form': password_form,
+        'profile_form': profile_form
     })
 
 
-# === PATIENT: View their appointments ===
-
+# --- Doctor registration (by admin/manager) ---
 @login_required
-@user_passes_test(is_patient)
-def my_appointments(request):
-    """
-    Display all appointments for the logged-in patient.
-    """
-    patient = get_object_or_404(Patient, user=request.user)
-    appointments = patient.appointments.select_related("doctor", "time_slot").order_by("-created_at")
-    return render(request, "appointments/my_appointments.html", {"appointments": appointments})
+def register_doctor(request):
+    if request.user.role not in [User.Role.ADMIN, User.Role.MANAGER]:
+        messages.error(request, _("You are not authorized to access this page."))
+        return redirect('core:home')
 
-
-# === DOCTOR: Manage appointments ===
-
-@login_required
-@user_passes_test(is_doctor)
-def doctor_appointments(request):
-    """
-    Display all appointments for the logged-in doctor.
-    """
-    doctor = get_object_or_404(Doctor, user=request.user)
-    appointments = doctor.appointments.select_related("patient", "time_slot").order_by("time_slot__date", "time_slot__start_time")
-    return render(request, "appointments/doctor_appointments.html", {"appointments": appointments})
-
-
-@login_required
-@user_passes_test(is_doctor)
-def update_appointment_status(request, appointment_id, action):
-    """
-    Doctor can confirm, cancel, or mark appointment as done.
-    """
-    doctor = get_object_or_404(Doctor, user=request.user)
-    appointment = get_object_or_404(Appointment, id=appointment_id, doctor=doctor)
-
-    valid_actions = {
-        "confirm": "confirmed",
-        "cancel": "cancelled",
-        "done": "completed",
-    }
-
-    if action not in valid_actions:
-        messages.error(request, "Invalid action.")
-        return redirect("appointments:doctor_appointments")
-
-    appointment.status = valid_actions[action]
-    appointment.save()
-
-    # Free slot if appointment is cancelled
-    if action == "cancel":
-        appointment.time_slot.status = "free"
-        appointment.time_slot.save()
-
-    messages.success(request, f"Appointment {action} successfully.")
-    return redirect("appointments:doctor_appointments")
-
-@login_required
-@user_passes_test(is_manager)
-def manager_planning(request):
-    """
-    Display current month planning for all doctors.
-    If no planning exists for the month, show a button to generate it.
-    """
-    today = timezone.now().date()
-    month = today.month
-    year = today.year
-
-    # Retrieve all plannings for the current month
-    plannings = Planning.objects.filter(month=month, year=year).prefetch_related('slots', 'doctor')
-    
-    if plannings.exists():
-        # Pass the first planning for simplicity (you can customize per doctor)
-        planning = plannings.first()
+    if request.method == 'POST':
+        form = DoctorRegistrationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, _("Doctor registered successfully. First login will require setup."))
+            return redirect('core:manager_dashboard' if request.user.role == User.Role.MANAGER else 'core:admin_dashboard')
     else:
-        planning = None
+        form = DoctorRegistrationForm()
+    return render(request, 'accounts/register_doctor.html', {'form': form})
 
-    context = {
-        "planning": planning,
-        "month": month,
-        "year": year,
-    }
-    return render(request, "appointments/manager_planning.html", context)
+
+# --- Manager registration (by admin) ---
+@login_required
+def register_manager(request):
+    if request.user.role != User.Role.ADMIN:
+        messages.error(request, _("You are not authorized to access this page."))
+        return redirect('core:home')
+
+    if request.method == 'POST':
+        form = ManagerCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, _("Manager registered successfully. First login will require setup."))
+            return redirect('core:admin_dashboard')
+    else:
+        form = ManagerCreationForm()
+    return render(request, 'accounts/register_manager.html', {'form': form})
+
+
+# --- Profile updates ---
+@login_required
+def update_doctor_profile(request):
+    doctor = get_object_or_404(Doctor, user=request.user)
+    form = DoctorProfileForm(request.POST or None, request.FILES or None, instance=doctor)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, _("Your profile has been updated successfully."))
+        return redirect('core:doctor_dashboard')
+    return render(request, 'accounts/doctor_profile_form.html', {'form': form})
+
 
 @login_required
-@user_passes_test(is_manager)
-def block_slot(request, slot_id):
-    slot = get_object_or_404(TimeSlot, id=slot_id)
-    slot.status = "blocked"
-    slot.save()
-    messages.success(request, "Slot blocked successfully.")
-    return redirect("appointments:manager_planning")
+def update_manager_profile(request):
+    manager = get_object_or_404(Manager, user=request.user)
+    form = ManagerProfileForm(request.POST or None, request.FILES or None, instance=manager)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, _("Your profile has been updated successfully."))
+        return redirect('core:manager_dashboard')
+    return render(request, 'accounts/manager_profile_form.html', {'form': form})
 
 
+# --- Logout ---
 @login_required
-@user_passes_test(is_manager)
-def unblock_slot(request, slot_id):
-    slot = get_object_or_404(TimeSlot, id=slot_id)
-    slot.status = "free"
-    slot.save()
-    messages.success(request, "Slot unblocked successfully.")
-    return redirect("appointments:manager_planning")
+def logout_user(request):
+    logout(request)
+    messages.info(request, _("You have been logged out successfully."))
+    return redirect('accounts:login')

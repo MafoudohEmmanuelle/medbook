@@ -22,16 +22,18 @@
     <a id="loginLink" href="{% url 'accounts:login' %}" style="display:none;"></a>
 
     <script>
-        // Wait 3 seconds then fade splash and redirect to login
-        setTimeout(() => {
+        document.addEventListener("DOMContentLoaded", function() {
             const splash = document.getElementById('splash');
-            splash.style.transition = "opacity 0.5s ease";
-            splash.style.opacity = 0;
+            if (!splash) return;
+
             setTimeout(() => {
-                // Redirect to login page after fade
-                window.location.href = document.getElementById('loginLink').href;
-            }, 500); // fade duration
-        }, 3000); // 3 seconds splash duration
+                splash.style.opacity = 0; 
+
+                setTimeout(() => {
+                    window.location.href = "{% url 'accounts:login' %}";
+                }, 500); 
+            }, 3000); 
+        });
     </script>
 
 </body>
