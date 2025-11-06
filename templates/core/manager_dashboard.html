@@ -1,47 +1,47 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="{{ LANGUAGE_CODE }}">
+<html lang="{{ LANGUAGE_CODE }}" data-lang="{{ LANGUAGE_CODE }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% trans "Manager Dashboard" %}</title>
 
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
-    <link rel="stylesheet" href="{% static 'css/manager_dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
-<div class="container-fluid d-flex p-0">
+
+<div class="d-flex min-vh-100">
 
     <!-- Sidebar -->
-    <aside class="sidebar d-flex flex-column p-3 text-white" id="sidebar">
+    <aside class="sidebar d-flex flex-column p-3 bg-success text-white flex-shrink-0" id="sidebar">
         <div class="logo text-center mb-4">
             <img src="{% static 'images/logomed.jpg' %}" alt="Profile" class="rounded-circle mb-2" width="60">
             <h2>MedBook</h2>
         </div>
         <ul class="nav flex-column mb-auto">
-            <li class="nav-item mb-2">
+            <li class="nav-item mb-1">
                 <a href="#" class="nav-link text-white active">
-                    <i class="bi bi-house-fill"></i> {% trans "Dashboard" %}
+                    <i class="bi bi-house-fill me-2"></i> {% trans "Dashboard" %}
                 </a>
             </li>
-            <li class="nav-item mb-2">
+            <li class="nav-item mb-1">
                 <a href="#" class="nav-link text-white">
-                    <i class="bi bi-people-fill"></i> {% trans "Managers" %}
+                    <i class="bi bi-people-fill me-2"></i> {% trans "Doctors" %}
                 </a>
             </li>
-            <li class="nav-item mb-2">
+            <li class="nav-item mb-1">
                 <a href="#" class="nav-link text-white">
-                    <i class="bi bi-person-badge-fill"></i> {% trans "Doctors" %}
+                    <i class="bi bi-person-badge-fill me-2"></i> {% trans "Patients" %}
                 </a>
             </li>
-            <li class="nav-item mb-2">
+            <li class="nav-item mb-1">
                 <a href="{% url 'manager:planning' %}" class="nav-link text-white">
-                    <i class="bi bi-calendar2-event-fill"></i> {% trans "Planning" %}
+                    <i class="bi bi-calendar2-event-fill me-2"></i> {% trans "Planning" %}
                 </a>
             </li>
         </ul>
@@ -50,21 +50,19 @@
         </div>
     </aside>
 
-    <!-- Main Content -->
+    <!-- Main content -->
     <main class="main-content flex-grow-1 p-4">
+
         <!-- Header -->
         <header class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-            <div class="d-flex align-items-center gap-3">
-                <button class="btn btn-light d-md-none" id="sidebarToggle"><i class="bi bi-list"></i></button>
-                <h1>{% trans "Welcome" %}, {{ request.user.first_name }}</h1>
-            </div>
+            <h1><span>{% trans "Welcome" %}</span>, {{ request.user.first_name }}</h1>
             <div class="header-icons d-flex align-items-center gap-2">
-                <button id="themeBtn" class="btn btn-light"><i class="bi bi-moon-fill"></i></button>
-                <a href="{% url 'accounts:complete_manager_profile' %}" class="btn btn-light">
-                    <i class="bi bi-person-circle"></i>
+                <button id="themeBtn" class="btn btn-light btn-sm"><i class="bi bi-moon-fill"></i></button>
+                <a href="{% url 'accounts:complete_manager_profile' %}" class="btn btn-light btn-sm">
+                    <i class="bi bi-person-fill"></i>
                 </a>
                 <form method="get" action="{% url 'accounts:switch_language' %}">
-                    <button type="submit" class="btn btn-light" name="lang" value="{% if LANGUAGE_CODE == 'fr' %}en{% else %}fr{% endif %}">
+                    <button type="submit" class="btn btn-light btn-sm" name="lang" value="{% if LANGUAGE_CODE == 'fr' %}en{% else %}fr{% endif %}">
                         {{ LANGUAGE_CODE|upper }}
                     </button>
                 </form>
@@ -72,107 +70,87 @@
         </header>
 
         <!-- Cards Section -->
-        <section class="row mb-4">
-            <div class="col-md-3 mb-3">
-                <div class="card text-white bg-primary h-100 text-center p-3">
-                    <div>{% trans "Active Managers" %}</div>
-                    <span id="confirmedCount" class="display-6">{{ active_managers_count }}</span>
+        <section class="cards row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="card purple text-white text-center p-3">
+                    <div>{% trans "Active Patients" %}</div>
+                    <span>{{ active_patients_count }}</span>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
-                <div class="card text-white bg-success h-100 text-center p-3">
+            <div class="col-6 col-md-3">
+                <div class="card green text-white text-center p-3">
                     <div>{% trans "Active Doctors" %}</div>
-                    <span id="pendingCount" class="display-6">{{ active_doctors_count }}</span>
+                    <span>{{ active_doctors_count }}</span>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
-                <div class="card text-white bg-info h-100 text-center p-3">
+            <div class="col-6 col-md-3">
+                <div class="card blue text-white text-center p-3">
                     <div>{% trans "Pending Requests" %}</div>
-                    <span id="cancelledCount" class="display-6">{{ pending_requests_count }}</span>
+                    <span>{{ pending_requests_count }}</span>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
-                <div class="card text-white bg-success h-100 text-center p-3">
+            <div class="col-6 col-md-3">
+                <div class="card darkgreen text-white text-center p-3">
                     <div>{% trans "Completed Tasks" %}</div>
-                    <span id="completedCount" class="display-6">{{ completed_tasks_count }}</span>
+                    <span>{{ completed_tasks_count }}</span>
                 </div>
             </div>
-        </section>
-
-        <!-- Chart Section -->
-        <section class="chart-section bg-light p-3 rounded mb-4" style="height: 300px;">
-            <h2>{% trans "Appointments Overview" %}</h2>
-            <canvas id="appointmentsChart"></canvas>
         </section>
 
         <!-- Managers Table Section -->
-        <section class="table-section bg-light p-3 rounded">
+        <section class="table-section">
             <h2>{% trans "Managers Overview" %}</h2>
             <div class="search-bar mb-2">
                 <input type="text" id="searchInput" class="form-control" placeholder="{% trans 'Search...' %}">
             </div>
-            <table class="table table-hover text-center align-middle">
-                <thead class="table-dark">
-                    <tr>
-                        <th>{% trans "Photo" %}</th>
-                        <th>{% trans "Name" %}</th>
-                        <th>{% trans "Email" %}</th>
-                        <th>{% trans "Role" %}</th>
-                        <th>{% trans "Actions" %}</th>
-                    </tr>
-                </thead>
-                <tbody id="managerTable">
-                    {% for manager in managers %}
-                    <tr>
-                        <td><i class="bi bi-person-circle fs-2"></i></td>
-                        <td>{{ manager.user.get_full_name }}</td>
-                        <td>{{ manager.user.email }}</td>
-                        <td>{% trans "Manager" %}</td>
-                        <td>
-                            <a href="#" class="btn btn-sm btn-success">{% trans "Edit" %}</a>
-                            <a href="#" class="btn btn-sm btn-secondary">{% trans "View" %}</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-striped align-middle text-center">
+                    <thead>
+                        <tr>
+                            <th>{% trans "Photo" %}</th>
+                            <th>{% trans "Name" %}</th>
+                            <th>{% trans "Email" %}</th>
+                            <th>{% trans "Role" %}</th>
+                            <th>{% trans "Actions" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for manager in managers %}
+                        <tr>
+                            <td><i class="bi bi-person-circle fs-3"></i></td>
+                            <td>{{ manager.user.get_full_name }}</td>
+                            <td>{{ manager.user.email }}</td>
+                            <td>{% trans "Manager" %}</td>
+                            <td class="d-flex gap-2 justify-content-center">
+                                <a href="#" class="btn action-self btn-sm">{% trans "Edit" %}</a>
+                                <a href="#" class="btn action-other btn-sm">{% trans "View" %}</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">{% trans "No managers found" %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </section>
+
     </main>
 </div>
 
-<!-- JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="{% static 'javascript/main.js' %}"></script>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Custom JS -->
+<script src="{% static 'js/script.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // Sidebar toggle
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar');
-    if(sidebarToggle) sidebarToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
-
-    // Chart.js
-    const ctx = document.getElementById('appointmentsChart');
-    if(ctx) {
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Active Managers','Active Doctors','Pending Requests','Completed Tasks'],
-                datasets: [{
-                    label: 'Count',
-                    data: [
-                        parseInt(document.getElementById('confirmedCount')?.textContent || 0),
-                        parseInt(document.getElementById('pendingCount')?.textContent || 0),
-                        parseInt(document.getElementById('cancelledCount')?.textContent || 0),
-                        parseInt(document.getElementById('completedCount')?.textContent || 0)
-                    ],
-                    backgroundColor: ['#4CAF50','#0d6efd','#17a2b8','#28a745'],
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-    }
+    sidebarToggle?.addEventListener('click', () => sidebar.classList.toggle('d-none'));
 });
 </script>
+
 </body>
 </html>

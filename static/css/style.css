@@ -1,0 +1,74 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+    background-color: #f7faff;
+    color: #333;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Sidebar */
+.sidebar {
+    min-width: 220px;
+    max-width: 220px;
+    height: 100vh;
+    transition: transform 0.3s ease;
+}
+@media (max-width: 992px) {
+    .sidebar {
+        position: absolute;
+        z-index: 1000;
+        transform: translateX(-100%);
+    }
+    .sidebar.d-none {
+        transform: translateX(-100%);
+    }
+    .sidebar.show {
+        transform: translateX(0);
+    }
+}
+
+/* Main content */
+.main-content {
+    flex-grow: 1;
+    padding: 20px 30px;
+}
+
+/* Cards */
+.cards .card span {
+    font-size: 28px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+/* Table styling */
+.table-section {
+    background-color: #eef3ff;
+    border-radius: 10px;
+    padding: 20px;
+}
+.table-section table th, .table-section table td {
+    vertical-align: middle;
+}
+
+/* Buttons */
+.action-self { background-color: #4CAF50; color: white; }
+.action-other { background-color: #cccccc; color: #333; }
+
+/* Dark mode */
+body.dark-theme {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+}
+body.dark-theme .sidebar { background-color: #2e4d30; }
+body.dark-theme .sidebar ul li.active { background-color: #416844; }
+body.dark-theme .main-content { background-color: #1e1e1e; }
+body.dark-theme .table-section { background-color: #2c2c2c; }
+body.dark-theme table { background-color: #383838; color: #e0e0e0; }
+body.dark-theme th, body.dark-theme td { border-bottom: 1px solid #555; }
+body.dark-theme .action-self { background-color: #416844; }
+body.dark-theme .action-other { background-color: #555555; }

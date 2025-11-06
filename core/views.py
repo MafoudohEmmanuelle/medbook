@@ -2,9 +2,10 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils.translation import gettext_lazy as _
 from django.contrib import messages
+from django.utils import timezone
 
-from accounts.models import User, Doctor, Patient
-from appointments.models import Appointment  # Assuming you have an Appointment model
+from accounts.models import User, Doctor, Patient, Manager
+from appointments.models import Appointment
 
 
 def home(request):
@@ -22,12 +23,14 @@ def patient_dashboard(request):
         return redirect('core:home')
 
     patient = Patient.objects.filter(user=request.user).first()
-
+    
+    # Real appointment stats
+    appointments = Appointment.objects.filter(patient=patient)
     stats = {
-        'confirmed': 2,
-        'pending': 1,
-        'cancelled': 0,
-        'completed': 4,
+        'confirmed': appointments.filter(status='confirmed').count(),
+        'pending': appointments.filter(status='modified').count(),  # modify as needed
+        'cancelled': appointments.filter(status='cancelled').count(),
+        'completed': appointments.filter(status='completed').count(),
     }
 
     context = {
@@ -45,11 +48,13 @@ def doctor_dashboard(request):
         return redirect('core:home')
 
     doctor = Doctor.objects.filter(user=request.user).first()
+    today = timezone.localdate()
 
+    appointments = Appointment.objects.filter(doctor=doctor)
     stats = {
-        'appointments_today': 5,
-        'pending_approvals': 3,
-        'patients_seen': 18,
+        'appointments_today': appointments.filter(time_slot__date=today).count(),
+        'pending_approvals': appointments.filter(status='pending').count(),  # adjust if needed
+        'patients_seen': appointments.filter(status='completed').count(),
     }
 
     context = {
@@ -59,32 +64,29 @@ def doctor_dashboard(request):
     }
     return render(request, 'core/doctor_dashboard.html', context)
 
-
 @login_required
 def manager_dashboard(request):
-    """
-    Dashboard view for Managers.
-    Shows overview stats and a table of doctors.
-    """
     if request.user.role != User.Role.MANAGER:
         messages.error(request, _("Access denied: Managers only."))
         return redirect('core:home')
 
-    doctors = Doctor.objects.all()
-    patients = Patient.objects.all()
-    appointments = Appointment.objects.all()  # Replace with your Appointment queryset if exists
+    # Fetch counts
+    active_patients_count = Patient.objects.count()
+    active_doctors_count = Doctor.objects.count()
+    # Example: pending requests can be appointments with status 'pending'
+    pending_requests_count = Appointment.objects.filter(status='pending').count()
+    # Completed tasks could be completed appointments
+    completed_tasks_count = Appointment.objects.filter(status='completed').count()
 
-    stats = {
-        'total_doctors': doctors.count(),
-        'total_patients': patients.count(),
-        'active_appointments': appointments.filter(status='active').count(),
-        'completed_appointments': appointments.filter(status='completed').count(),
-    }
+    # Managers list
+    managers = Manager.objects.all()  # or filter active managers if needed
 
     context = {
-        'doctors': doctors,
-        'patients': patients,
-        'stats': stats,
+        'active_patients_count': active_patients_count,
+        'active_doctors_count': active_doctors_count,
+        'pending_requests_count': pending_requests_count,
+        'completed_tasks_count': completed_tasks_count,
+        'managers': managers,
         'title': _("Manager Dashboard"),
     }
     return render(request, 'core/manager_dashboard.html', context)

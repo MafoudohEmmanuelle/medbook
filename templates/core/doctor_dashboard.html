@@ -1,0 +1,138 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="{{ request.LANGUAGE_CODE }}" data-lang="{{ request.LANGUAGE_CODE }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedBook Dashboard</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="{% static 'images/logomed.jpg' %}" alt="Profile" class="rounded-circle mb-2" width="60">
+                <h2>MedBook</h2>
+            </div>
+            <ul>
+                <li class="active">
+                    <i class="bi bi-house-door-fill"></i>
+                    <span data-translate="dashboard">Dashboard</span>
+                </li>
+                <li>
+                    <i class="bi bi-calendar-check-fill"></i>
+                    <span data-translate="my_appointments">Mes rendez-vous</span>
+                </li>
+                <li>
+                    <i class="bi bi-journal-text"></i>
+                    <span data-translate="history">Historique</span>
+                </li>
+            </ul>
+            <form method="POST" action="{% url 'accounts:logout' %}" class="mt-auto">
+                {% csrf_token %}
+                <button class="btn btn-outline-light w-100" data-translate="logout">
+                    <i class="bi bi-box-arrow-right"></i> Déconnexion
+                </button>
+            </form>
+        </aside>
+
+        <main class="main-content">
+            <header>
+                <h1 id="WelcomeText">
+                    <span data-translate="welcome_message">Bienvenue</span>, {{ patient.user.first_name }}
+                </h1>
+                <div class="header-icons">
+                    <button id="themeBtn"><i class="bi bi-moon-fill"></i></button>
+                    <button id="langBtn">EN</button>
+                    <a href="{% url 'accounts:profile_patient' %}" class="icon-link" data-translate="account_link_title">
+                        <i class="bi bi-person-fill"></i>
+                    </a>
+                    <button><i class="bi bi-question-circle-fill"></i></button>
+                </div>
+            </header>
+
+            <section class="cards">
+                {% with patient.appointments.all as appts %}
+                <div class="card purple" data-translate="confirmed_appointments">
+                    Mes RDV confirmés<br>
+                    <span>{{ appts|filter:"status=confirmed"|length }}</span>
+                </div>
+                <div class="card green" data-translate="pending_appointments">
+                    Mes RDV en attente<br>
+                    <span>{{ appts|filter:"status=modified"|length }}</span>
+                </div>
+                <div class="card blue" data-translate="cancelled_appointments">
+                    Mes RDV annulés<br>
+                    <span>{{ appts|filter:"status=cancelled"|length }}</span>
+                </div>
+                <div class="card darkgreen" data-translate="completed_appointments">
+                    Mes RDV effectués<br>
+                    <span>{{ appts|filter:"status=completed"|length }}</span>
+                </div>
+                {% endwith %}
+            </section>
+
+            <section class="table-section">
+                <h2 data-translate="activity_overview">Aperçu de vos activités</h2>
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Rechercher..." data-translate="search_placeholder">
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-translate="photo_header">Photo</th>
+                            <th data-translate="name_header">Nom</th>
+                            <th data-translate="specialty_header">Spécialité</th>
+                            <th data-translate="gender_header">Genre</th>
+                            <th data-translate="action_header">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="doctorTable">
+                        {% for doctor in doctors %}
+                        <tr>
+                            <td>
+                                {% if doctor.user.profile_image %}
+                                    <img src="{{ doctor.user.profile_image.url }}" alt="Doctor" class="rounded-circle" width="40">
+                                {% else %}
+                                    <i class="bi bi-person-circle fs-3"></i>
+                                {% endif %}
+                            </td>
+                            <td>{{ doctor.user.get_full_name }}</td>
+                            <td data-fr="{{ doctor.specialty }}" data-en="{{ doctor.specialty_en }}">{{ doctor.specialty }}</td>
+                            <td>{{ doctor.user.gender }}</td>
+                            <td>
+                                <a href="{% url 'appointments:book_self' doctor.id %}" class="btn btn-success btn-sm" data-translate="action_buttonM">Pour moi</a>
+                                <a href="{% url 'appointments:book_other' doctor.id %}" class="btn btn-secondary btn-sm" data-translate="action_button">Pour autre</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">Aucun médecin trouvé</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/script.js' %}"></script>
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const tableRows = document.querySelectorAll('#doctorTable tr');
+        searchInput?.addEventListener('input', () => {
+            const query = searchInput.value.toLowerCase();
+            tableRows.forEach(row => {
+                const name = row.children[1].textContent.toLowerCase();
+                row.style.display = name.includes(query) ? '' : 'none';
+            });
+        });
+    </script>
+</body>
+</html>
