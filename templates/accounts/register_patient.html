@@ -17,11 +17,11 @@
             height: 100%;
             margin: 0;
             background: #f8f9fa;
-            position: relative;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 2rem 0;
+            position: relative;
         }
 
         /* Corner shapes */
@@ -78,33 +78,15 @@
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
 
-            <div class="mb-3">
-                {{ form.first_name|add_class:"form-control" }}
-            </div>
-            <div class="mb-3">
-                {{ form.last_name|add_class:"form-control" }}
-            </div>
-            <div class="mb-3">
-                {{ form.email|add_class:"form-control" }}
-            </div>
-            <div class="mb-3">
-                {{ form.phone|add_class:"form-control" }}
-            </div>
-            <div class="mb-3">
-                {{ form.gender|add_class:"form-select" }}
-            </div>
-            <div class="mb-3">
-                {{ form.address|add_class:"form-control" }}
-            </div>
-            <div class="mb-3">
-                {{ form.date_of_birth|add_class:"form-control" }}
-            </div>
-            <div class="mb-3">
-                {{ form.password1|add_class:"form-control" }}
-            </div>
-            <div class="mb-3">
-                {{ form.password2|add_class:"form-control" }}
-            </div>
+            <div class="mb-3">{{ form.first_name }}</div>
+            <div class="mb-3">{{ form.last_name }}</div>
+            <div class="mb-3">{{ form.email }}</div>
+            <div class="mb-3">{{ form.phone }}</div>
+            <div class="mb-3">{{ form.gender }}</div>
+            <div class="mb-3">{{ form.address }}</div>
+            <div class="mb-3">{{ form.date_of_birth }}</div>
+            <div class="mb-3">{{ form.password1 }}</div>
+            <div class="mb-3">{{ form.password2 }}</div>
 
             <button type="submit" class="btn btn-primary w-100">Register</button>
         </form>

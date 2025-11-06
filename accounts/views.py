@@ -152,27 +152,32 @@ def update_manager_profile(request):
         form = ManagerProfileForm(instance=manager)
     return render(request, 'accounts/manager_profile_form.html', {'form': form})
 
+DEFAULT_PASSWORD = "Welcome123!"  # fixed password for all new managers/doctors
 
-# --- Login (Email only for first-time users) ---
 def login_view(request):
     if request.method == 'POST':
         form = EmailOnlyLoginForm(request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
+            password = form.cleaned_data.get('password', '')
+
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
                 messages.error(request, _("Email not found."))
                 return redirect('accounts:login')
 
-            login(request, user)
-            request.session['role'] = user.role
-
+            # If first login or user has no usable password, set default password
             if not user.has_usable_password():
-                # Redirect first-time user to setup page
-                return redirect('accounts:setup_account')
-            else:
-                # Already has password → redirect to role dashboard
+                user.set_password(DEFAULT_PASSWORD)
+                user.save()
+
+            # Authenticate the user with the password they entered
+            if user.check_password(password):
+                login(request, user)
+                request.session['role'] = user.role
+
+                # Redirect to dashboard
                 if user.role == User.Role.PATIENT:
                     return redirect('core:patient_dashboard')
                 elif user.role == User.Role.DOCTOR:
@@ -185,10 +190,12 @@ def login_view(request):
                     messages.error(request, _("Invalid user role. Please contact support."))
                     logout(request)
                     return redirect('accounts:login')
+            else:
+                messages.error(request, _("Incorrect password."))
     else:
         form = EmailOnlyLoginForm()
-    return render(request, "accounts/login.html", {"form": form})
 
+    return render(request, "accounts/login.html", {"form": form})
 
 # --- Logout ---
 @login_required

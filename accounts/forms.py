@@ -6,18 +6,42 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 class PatientRegistrationForm(UserCreationForm):
-    first_name = forms.CharField(max_length=30, required=True)
-    last_name = forms.CharField(max_length=30, required=True)
-    email = forms.EmailField(required=True)
+    first_name = forms.CharField(
+        max_length=30, required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'})
+    )
+    last_name = forms.CharField(
+        max_length=30, required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'})
+    )
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email'})
+    )
     date_of_birth = forms.DateField(
         required=False,
-        widget=forms.DateInput(attrs={'type': 'date'})
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
     )
-    address = forms.CharField(required=False)
-    phone = forms.CharField(required=True)
+    address = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Address'})
+    )
+    phone = forms.CharField(
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone'})
+    )
     gender = forms.ChoiceField(
         required=False,
-        choices=[("Male", "Male"), ("Female", "Female")]
+        choices=[("Male", "Male"), ("Female", "Female")],
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    password1 = forms.CharField(
+        label="Password",
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Password'})
+    )
+    password2 = forms.CharField(
+        label="Confirm Password",
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm Password'})
     )
 
     class Meta:
@@ -45,7 +69,7 @@ class PatientRegistrationForm(UserCreationForm):
                 date_of_birth=self.cleaned_data.get('date_of_birth')
             )
         return user
-
+    
 class DoctorRegistrationForm(forms.ModelForm):
     """Used by admin to create a doctor account with minimal info."""
     email = forms.EmailField(required=True)
