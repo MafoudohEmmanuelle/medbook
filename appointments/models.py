@@ -83,3 +83,22 @@ class Appointment(models.Model):
     def __str__(self):
         target = f"{self.beneficiary.first_name} {self.beneficiary.last_name}" if self.beneficiary else self.patient.user.get_full_name()
         return f"{target} -> Dr. {self.doctor.user.last_name} | {self.time_slot.date} {self.time_slot.start_time}"
+
+class DoctorUnavailability(models.Model):
+    doctor = models.ForeignKey('accounts.Doctor', on_delete=models.CASCADE, related_name='unavailabilities')
+    start_date = models.DateField()
+    end_date = models.DateField()
+    reason = models.CharField(max_length=255, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.doctor.user.get_full_name()} unavailable {self.start_date} to {self.end_date}"
+
+    def block_slots(self):
+        """
+        Mark all slots within this period as 'blocked'.
+        """
+        slots = TimeSlot.objects.filter(
+            planning__doctor=self.doctor,
+            date__range=(self.start_date, self.end_date)
+        )
+        slots.update(status='blocked')

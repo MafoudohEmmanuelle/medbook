@@ -1,6 +1,9 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, SetPasswordForm
 from accounts.models import User, Patient, Doctor, Manager
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class PatientRegistrationForm(UserCreationForm):
     first_name = forms.CharField(max_length=30, required=True)
@@ -54,17 +57,11 @@ class DoctorRegistrationForm(forms.ModelForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.role = User.Role.DOCTOR
-
-        #  Generate and assign random password
-        temp_password = User.objects.make_random_password()
-        user.set_password(temp_password)
-
+        user.set_unusable_password()  # ⬅️ mark password as not yet set
         if commit:
             user.save()
             Doctor.objects.create(user=user)
-
-        # Return both for email sending
-        return user, temp_password
+        return user
 
 class DoctorProfileForm(forms.ModelForm):
     phone = forms.CharField(required=False)
@@ -104,16 +101,12 @@ class ManagerCreationForm(forms.ModelForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.role = User.Role.MANAGER
-
-        temp_password = User.objects.make_random_password()
-        user.set_password(temp_password)
-        user.is_staff = True  # Optional for admin panel access
-
+        user.is_staff = True
+        user.set_unusable_password()
         if commit:
             user.save()
             Manager.objects.create(user=user)
-
-        return user, temp_password
+        return user
 
 class ManagerProfileForm(forms.ModelForm):
     phone = forms.CharField(required=False)
@@ -143,15 +136,19 @@ class ManagerProfileForm(forms.ModelForm):
             manager.save()
         return manager
 
-class LoginForm(AuthenticationForm):
-    username = forms.EmailField(
+class EmailOnlyLoginForm(forms.Form):
+    email = forms.EmailField(
         label="Email",
         widget=forms.EmailInput(attrs={'class': 'form-control'})
     )
-    password = forms.CharField(
-        label="Password",
-        widget=forms.PasswordInput(attrs={'class': 'form-control'})
-    )
+
+
+class DefinePasswordForm(SetPasswordForm):
+    """Form for users to define their password for the first time."""
+    class Meta:
+        model = User
+        fields = ['new_password1', 'new_password2']
+
 
 class CustomUserCreationForm(forms.ModelForm):
     """Form to create a user without requiring password in admin."""
